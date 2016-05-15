@@ -1,0 +1,19 @@
+version := "1.0.0"
+
+scalaVersion := "2.11.8"
+
+resolvers ++= Seq(
+  "snapshots"           at "http://oss.sonatype.org/content/repositories/snapshots",
+  "releases"            at "http://oss.sonatype.org/content/repositories/releases",
+  "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
+)
+
+scalacOptions ++= Seq("-feature", "-unchecked", "-deprecation", "-encoding", "utf8")
+
+libraryDependencies ++= {
+  Seq(
+    "com.typesafe.akka"  %% "akka-http-experimental" % "2.4.4",
+    "com.typesafe.slick" %% "slick"                  % "3.1.1",
+    "org.typelevel"      %% "cats"                   % "0.5.0"
+  )
+}
