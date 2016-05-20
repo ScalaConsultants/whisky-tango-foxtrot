@@ -1,9 +1,11 @@
 package io.scalac.wtf.domain
 
-import cats.data.Validated.{ invalidNel, valid }
-import cats.data.{ NonEmptyList, ValidatedNel }
+import cats.data.Validated.{invalidNel, valid}
+import cats.data.{NonEmptyList, ValidatedNel}
 import cats.implicits._
 import slick.lifted.MappedTo
+
+import scala.util.matching.Regex
 
 case class UserId(value: Long) extends MappedTo[Long]
 
@@ -13,8 +15,6 @@ case class User(
     password: String)
 
 object User {
-
-  import java.util.regex.Pattern
 
   sealed trait ValidationError
   final case object WrongEmailPattern extends ValidationError
@@ -26,19 +26,24 @@ object User {
     (validation) map { case (email, password) => User(email = email, password = password)}
   }
 
-  private val emailPattern = Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE)
+  private val emailPattern    = "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$".r
+  private val passwordPattern = ".{6,}".r
 
   private def validateEmail(email: String): ValidatedNel[ValidationError, String] = {
-    val matches = emailPattern.matcher(email).matches()
+    val matches = emailPattern findFirstIn email
 
     matches match {
-      case true => valid(email)
-      case false => invalidNel(WrongEmailPattern)
+      case Some(_) => valid(email)
+      case None    => invalidNel(WrongEmailPattern)
     }
   }
 
-  private def validatePassword(password: String): ValidatedNel[ValidationError, String] = password match {
-    case "" => invalidNel(EmptyPassword)
-    case _  => valid(password)
+  private def validatePassword(password: String): ValidatedNel[ValidationError, String] = {
+    val matches = passwordPattern findFirstIn password
+
+    matches match {
+      case Some(_) => valid(password)
+      case None    => invalidNel(EmptyPassword)
+    }
   }
 }
