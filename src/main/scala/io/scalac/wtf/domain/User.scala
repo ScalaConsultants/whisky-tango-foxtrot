@@ -18,7 +18,7 @@ object User {
 
   sealed trait ValidationError
   final case object WrongEmailPattern extends ValidationError
-  final case object EmptyPassword     extends ValidationError
+  final case object PasswordTooShort  extends ValidationError
 
   def validateUser(email: String, password: String): ValidatedNel[ValidationError, User] = {
     val validation = (validateEmail(email) |@| validatePassword(password))
@@ -27,7 +27,6 @@ object User {
   }
 
   private val emailPattern    = "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$".r
-  private val passwordPattern = ".{6,}".r
 
   private def validateEmail(email: String): ValidatedNel[ValidationError, String] = {
     val matches = emailPattern findFirstIn email
@@ -39,11 +38,9 @@ object User {
   }
 
   private def validatePassword(password: String): ValidatedNel[ValidationError, String] = {
-    val matches = passwordPattern findFirstIn password
-
-    matches match {
-      case Some(_) => valid(password)
-      case None    => invalidNel(EmptyPassword)
-    }
+    if(password.length >= 6)
+      valid(password)
+    else
+      invalidNel(PasswordTooShort)
   }
 }
