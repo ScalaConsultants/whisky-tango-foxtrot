@@ -1,8 +1,11 @@
 package io.scalac.wtf.domain
 
 import cats.data.Validated.{Invalid, Valid}
+import cats.data.{Validated, ValidatedNel}
 import cats.{Applicative, Functor, Monad}
+import cats.data.Validated.{invalidNel, valid}
 import cats.implicits._
+import io.scalac.wtf.domain.User.{UserAlreadyExists, ValidationError}
 import slick.dbio.DBIO
 import slick.driver.H2Driver.api._
 
@@ -20,17 +23,19 @@ object UserService {
     def flatMap[A, B](fa: DBIO[A])(f: A => DBIO[B]) = fa.flatMap(f)
   }
 */
-  def createUser(createdUser: User)(implicit executionContext: ExecutionContext): DBIO[UserId] = {
-    UserRepository.findByEmail(createdUser.email).flatMap {
-      case Some(_) => DBIO.failed(new Exception("Provided email is already taken"))
-      case _ => {
-        val validation = User.validateUser(createdUser.email, createdUser.password)
 
-        validation match {
-          case Valid(u)   => UserRepository.save(u)
-          case Invalid(e) => DBIO.failed(new Exception(e.unwrap.mkString(" ")))
+
+  def createUser(createdUser: User)(implicit executionContext: ExecutionContext): DBIO[ValidatedNel[ValidationError, UserId]] = {
+    val validation = User.validateUser(createdUser.email, createdUser.password)
+
+    validation match {
+      case Valid(u)   => {
+        UserRepository.findByEmail(createdUser.email).flatMap {
+          case Some(_) => DBIO.successful(invalidNel(UserAlreadyExists))
+          case None => UserRepository.save(u).map(userId => valid(userId))
         }
       }
-    }.transactionally
+      case Invalid(e) => DBIO.successful(Validated.invalid(e))
+    }
   }
 }
