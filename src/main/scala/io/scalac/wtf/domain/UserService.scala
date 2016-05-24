@@ -23,8 +23,6 @@ object UserService {
     def flatMap[A, B](fa: DBIO[A])(f: A => DBIO[B]) = fa.flatMap(f)
   }
 */
-
-
   def createUser(createdUser: User)(implicit executionContext: ExecutionContext): DBIO[ValidatedNel[ValidationError, UserId]] = {
     val validation = User.validateUser(createdUser.email, createdUser.password)
 
