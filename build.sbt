@@ -14,6 +14,8 @@ libraryDependencies ++= {
   Seq(
     "com.typesafe.akka"  %% "akka-http-experimental" % "2.4.4",
     "com.typesafe.slick" %% "slick"                  % "3.1.1",
-    "org.typelevel"      %% "cats"                   % "0.5.0"
+    "org.typelevel"      %% "cats"                   % "0.5.0",
+    "org.scalactic"      %% "scalactic"              % "2.2.6",
+    "org.scalatest"      %% "scalatest"              % "2.2.6" % "test"
   )
 }
