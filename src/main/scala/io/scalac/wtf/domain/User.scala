@@ -22,12 +22,12 @@ object User {
   final case object UserAlreadyExists extends ValidationError
 
   def validateUser(email: String, password: String): ValidatedNel[ValidationError, User] = {
-    val validation = (validateEmail(email) |@| validatePassword(password))
+    val validation = validateEmail(email) |@| validatePassword(password)
 
     (validation) map { case (email, password) => User(email = email, password = password)}
   }
 
-  private val emailPattern    = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".r
+  private val emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".r
 
   private def validateEmail(email: String): ValidatedNel[ValidationError, String] = {
     val matches = emailPattern findFirstIn email
