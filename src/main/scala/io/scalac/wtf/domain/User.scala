@@ -1,11 +1,15 @@
 package io.scalac.wtf.domain
 
-import cats.data.Validated.{invalidNel, valid}
-import cats.data.{NonEmptyList, ValidatedNel}
+import cats._
+import cats.data.{Validated, Xor, XorT}
+import cats.data.Validated._
+import cats.data.{NonEmptyList}
 import cats.implicits._
+import slick.dbio.DBIO
 import slick.lifted.MappedTo
 
-import scala.util.matching.Regex
+import scala.concurrent.ExecutionContext
+
 
 case class UserId(value: Long) extends MappedTo[Long]
 
@@ -21,27 +25,50 @@ object User {
   final case object PasswordTooShort  extends ValidationError
   final case object UserAlreadyExists extends ValidationError
 
-  def validateUser(email: String, password: String): ValidatedNel[ValidationError, User] = {
-    val validation = validateEmail(email) |@| validatePassword(password)
-
-    (validation) map { case (email, password) => User(email = email, password = password)}
-  }
-
   private val emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".r
 
-  private def validateEmail(email: String): ValidatedNel[ValidationError, String] = {
-    val matches = emailPattern findFirstIn email
-
-    matches match {
-      case Some(_) => valid(email)
-      case None    => invalidNel(WrongEmailPattern)
-    }
+  //we might need to move it to a more globally accessible place at some point  
+  implicit def dbioMonad(implicit ec: ExecutionContext) = new Monad[DBIO] {
+    def pure[A](a: A): DBIO[A] = DBIO.successful(a)
+    def flatMap[A, B](fa: DBIO[A])(f: A => DBIO[B]) = fa.flatMap(f)
   }
 
-  private def validatePassword(password: String): ValidatedNel[ValidationError, String] = {
+  def validateUser(email: String, password: String)(implicit ec: ExecutionContext): DBIO[Xor[NonEmptyList[ValidationError], User]] = {
+    val validatedUser = for {
+      emailV <- validateEmail(email).toValidated
+      emailNel = emailV.toValidatedNel
+      passwordV <- DBIO.successful(validatePassword(password))
+      passwordNel = passwordV.toValidatedNel
+    } yield (emailNel |@| passwordNel) map { 
+      case (email, password) => User(email = email, password = password)
+    }
+
+    validatedUser.map(_.toXor)
+  }
+
+  private def validateEmail(email: String)(implicit ec: ExecutionContext): XorT[DBIO, ValidationError, String] = {
+    val emailPatternValidation = (emailPattern findFirstIn email) match {
+      case Some(_) => Xor.right(email)
+      case None => Xor.left(WrongEmailPattern)
+    }
+
+    val emailUniqueValidation = UserRepository.findByEmail(email) map { userOpt => 
+      userOpt match {
+        case Some(_) => Xor.left(UserAlreadyExists)
+        case None => Xor.right(email)
+      }
+    }
+
+    for {
+      e1 <- XorT[DBIO, ValidationError, String](DBIO.successful(emailPatternValidation))
+      e2 <- XorT[DBIO, ValidationError, String](emailUniqueValidation)
+    } yield (e1 |+| e2)
+  }
+
+  private def validatePassword(password: String): Validated[ValidationError, String] =
     if(password.length >= 6)
       valid(password)
     else
-      invalidNel(PasswordTooShort)
-  }
+      invalid(PasswordTooShort)
+      
 }

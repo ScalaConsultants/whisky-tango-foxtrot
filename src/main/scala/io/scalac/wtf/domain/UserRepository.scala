@@ -9,10 +9,10 @@ object UserRepository {
 
   val usersTable: TableQuery[Users] = TableQuery[Users]
 
-  //Replace Option with something fully functional like Maybe in Haskell (this removes e.g. "get")
   def findByEmail(email: String)(implicit executionContext: ExecutionContext): DBIO[Option[User]] =
     usersTable.filter(_.email === email).result.map(_.headOption)
     
   def save(user: User)(implicit executionContext: ExecutionContext): DBIO[UserId] =
     (usersTable returning usersTable.map(_.id)) += user
+    
 }
