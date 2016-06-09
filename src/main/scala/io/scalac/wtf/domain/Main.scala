@@ -19,39 +19,9 @@ import io.scalac.wtf.domain.tables.Users
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-case class JSONUser(email: String, password: String)
-
-object Main extends App {
+object Main extends WtfApplication {
   override def main(args: Array[String]) {
 
-    implicit val actorSystem       = ActorSystem("system")
-    implicit val actorMaterializer = ActorMaterializer()
-
-    implicit val userFormat = jsonFormat2(JSONUser)
-
-    val db         = Database.forConfig("h2mem1")
-    val usersTable = TableQuery[Users]
-
-    //Used for showcase only, the table should already exist in a realistic scenario
-    val createSchemaWork = for {
-      _ <- usersTable.schema.create
-    } yield ()
-    Await.result(db.run(createSchemaWork), Duration.Inf)
-
-    val createUserRoute = path("register") {
-      post {
-        entity(as[JSONUser]) { user =>
-          val createdUser = User(email = user.email, password = user.password)
-          val result = db.run(createUser(createdUser))
-
-          onSuccess(result) {
-            case Valid(u) => complete("Successfuly registered user!")
-            case Invalid(e) => complete(e.unwrap.mkString(" "))
-          }
-        }
-      }
-    }
-
-    Http().bindAndHandle(createUserRoute, "localhost", 8080)
+    Http().bindAndHandle(registerUserRoute(db), "localhost", 8080)
   }
 }

@@ -14,6 +14,8 @@ case class User(
     email: String, 
     password: String)
 
+case class NewUser(email: String, password: String)
+
 object User {
 
   sealed trait ValidationError
