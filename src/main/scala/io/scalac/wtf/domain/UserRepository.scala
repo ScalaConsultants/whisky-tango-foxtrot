@@ -5,16 +5,14 @@ import slick.driver.PostgresDriver.api._
 import io.scalac.wtf.domain.tables.Users
 
 
-trait UserRepository {
+object UserRepository {
 
-  implicit def executionContext: ExecutionContext
-  
   val usersTable: TableQuery[Users] = TableQuery[Users]
 
-  def findByEmail(email: String): DBIO[Option[User]] =
+  def findByEmail(email: String)(implicit executionContext: ExecutionContext): DBIO[Option[User]] =
     usersTable.filter(_.email === email).result.map(_.headOption)
     
-  def save(user: User): DBIO[UserId] =
+  def save(user: User)(implicit executionContext: ExecutionContext): DBIO[UserId] =
     (usersTable returning usersTable.map(_.id)) += user
-  
+    
 }
