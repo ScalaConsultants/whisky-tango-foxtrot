@@ -33,7 +33,7 @@ object User {
     def flatMap[A, B](fa: DBIO[A])(f: A => DBIO[B]) = fa.flatMap(f)
   }
 
-  def validateUser(email: String, password: String)(implicit ec: ExecutionContext): XorT[DBIO, NonEmptyList[ValidationError], User] = {
+  def validateUser(email: String, password: String)(implicit ec: ExecutionContext): DBIO[Xor[NonEmptyList[ValidationError], User]] = {
     val validatedUser = for {
       emailV <- validateEmail(email).toValidated
       emailNel = emailV.toValidatedNel
@@ -42,7 +42,7 @@ object User {
       case (email, password) => User(email = email, password = password)
     }
 
-    XorT[DBIO, NonEmptyList[ValidationError], User](validatedUser.map(_.toXor))
+    validatedUser.map(_.toXor)
   }
 
   private def validateEmail(email: String)(implicit ec: ExecutionContext): XorT[DBIO, ValidationError, String] = {

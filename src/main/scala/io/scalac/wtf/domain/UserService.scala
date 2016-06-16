@@ -15,10 +15,13 @@ object UserService {
     def flatMap[A, B](fa: DBIO[A])(f: A => DBIO[B]) = fa.flatMap(f)
   }
 
-  def createUser(createdUser: User)(implicit ec: ExecutionContext): XorT[DBIO, NonEmptyList[ValidationError], UserId] =
-    for {
-      validUser <- User.validateUser(createdUser.email, createdUser.password)
+  def createUser(createdUser: User)(implicit ec: ExecutionContext): DBIO[Xor[NonEmptyList[ValidationError], UserId]] = {
+    val resT = for {
+      validUser <- XorT[DBIO, NonEmptyList[ValidationError], User](User.validateUser(createdUser.email, createdUser.password))
       userId    <- XorT.right[DBIO, NonEmptyList[ValidationError], UserId](UserRepository.save(validUser))
     } yield userId
-  
+
+    resT.value
+  }
+
 }
