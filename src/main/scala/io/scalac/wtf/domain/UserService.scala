@@ -18,7 +18,7 @@ object UserService {
   def createUser(createdUser: User)(implicit ec: ExecutionContext): XorT[DBIO, NonEmptyList[ValidationError], UserId] =
     for {
       validUser <- User.validateUser(createdUser.email, createdUser.password)
-      userId    <- XorT[DBIO, NonEmptyList[ValidationError], UserId](UserRepository.save(validUser).map(Xor.Right(_)))
+      userId    <- XorT.right[DBIO, NonEmptyList[ValidationError], UserId](UserRepository.save(validUser))
     } yield userId
   
 }
