@@ -37,8 +37,7 @@ object User {
     val validatedUser = for {
       emailV <- validateEmail(email).toValidated
       emailNel = emailV.toValidatedNel
-      passwordV <- DBIO.successful(validatePassword(password))
-      passwordNel = passwordV.toValidatedNel
+      passwordNel = validatePassword(password).toValidatedNel
     } yield (emailNel |@| passwordNel) map { 
       case (email, password) => User(email = email, password = password)
     }
