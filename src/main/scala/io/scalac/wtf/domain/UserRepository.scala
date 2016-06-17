@@ -12,7 +12,7 @@ object UserRepository {
   def findByEmail(email: String)(implicit executionContext: ExecutionContext): DBIO[Option[User]] =
     usersTable.filter(_.email === email).result.map(_.headOption)
     
-  def save(user: User)(implicit executionContext: ExecutionContext): DBIO[UserId] =
+  def save(user: UserMapping)(implicit executionContext: ExecutionContext): DBIO[UserId] =
     (usersTable returning usersTable.map(_.id)) += user
     
 }

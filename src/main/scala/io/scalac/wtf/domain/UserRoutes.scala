@@ -10,14 +10,14 @@ import cats.implicits._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
 trait UserRoutes {
-  implicit val userFormat = jsonFormat2(NewUser)
+  implicit val userFormat = jsonFormat2(UserPrototype)
 
   def registerUserRoute = Reader((config: Config) => {
     implicit val ec = config.ec
     path("register") {
       post {
-        entity(as[NewUser]) { userRequest =>
-          val user = User(email = userRequest.email, password = userRequest.password)
+        entity(as[UserPrototype]) { userRequest =>
+          val user = UserPrototype(email = userRequest.email, password = userRequest.password)
           val result = config.db.run(createUser(user))
 
           complete {

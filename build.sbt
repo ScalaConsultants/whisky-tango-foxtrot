@@ -19,6 +19,7 @@ libraryDependencies ++= {
     "org.typelevel"      %% "cats"                              % "0.5.0",
     "com.h2database"     % "h2"                                 % "1.3.170",
     "org.scalactic"      %% "scalactic"                         % "2.2.6",
-    "org.scalatest"      %% "scalatest"                         % "2.2.6" % "test"
+    "org.scalatest"      %% "scalatest"                         % "2.2.6" % "test",
+    "com.github.t3hnar"  %% "scala-bcrypt"                      % "2.6"
   )
 }
