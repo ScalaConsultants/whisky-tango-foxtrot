@@ -1,5 +1,6 @@
 package io.scalac.wtf.domain
 
+import io.scalac.wtf.domain.Implicits._
 import cats._
 import cats.data.{Validated, Xor, XorT}
 import cats.data.Validated._
@@ -28,12 +29,6 @@ object User {
   final case object UserAlreadyExists extends ValidationError
 
   private val emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".r
-
-  //we might need to move it to a more globally accessible place at some point  
-  implicit def dbioMonad(implicit ec: ExecutionContext) = new Monad[DBIO] {
-    def pure[A](a: A): DBIO[A] = DBIO.successful(a)
-    def flatMap[A, B](fa: DBIO[A])(f: A => DBIO[B]) = fa.flatMap(f)
-  }
 
   def validateUser(email: String, password: String)(implicit ec: ExecutionContext): DBIO[Xor[NonEmptyList[ValidationError], User]] = {
     val validatedUser = for {
