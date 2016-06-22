@@ -22,10 +22,10 @@ trait UserRoutes {
           val result = db.run(createUser(user))
           
           complete {
-            result.map { userIdOrErrors => userIdOrErrors match {
+            result.map {
               case Xor.Left(errors) => JsString(errors.unwrap.mkString(" "))
               case Xor.Right(_) => JsObject.empty
-            }}
+            }
           }
         }
       }
