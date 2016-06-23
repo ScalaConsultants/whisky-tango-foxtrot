@@ -12,7 +12,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 trait UserRoutes {
   implicit val userFormat = jsonFormat2(NewUser)
 
-  def registerUserRoute = Reader((config: Config) => {
+  def registerUserRoute = Reader((config: DatabaseConfig) => {
     implicit val ec = config.ec
     path("register") {
       post {
