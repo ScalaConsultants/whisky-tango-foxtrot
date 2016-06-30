@@ -16,7 +16,7 @@ libraryDependencies ++= {
     "com.typesafe.akka"  %% "akka-http-experimental"            % "2.4.4",
     "com.typesafe.akka"  %% "akka-http-spray-json-experimental" % "2.4.7",
     "com.typesafe.slick" %% "slick"                             % "3.1.1",
-    "org.typelevel"      %% "cats"                              % "0.5.0",
+    "org.typelevel"      %% "cats"                              % "0.6.0",
     "com.h2database"     % "h2"                                 % "1.3.170",
     "org.scalactic"      %% "scalactic"                         % "2.2.6",
     "org.scalatest"      %% "scalatest"                         % "2.2.6" % "test"
