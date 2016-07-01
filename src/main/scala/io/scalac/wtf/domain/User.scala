@@ -9,18 +9,22 @@ import cats.data.{NonEmptyList}
 import cats.implicits._
 import slick.dbio.DBIO
 import slick.lifted.MappedTo
+import com.github.t3hnar.bcrypt._
 
 import scala.concurrent.ExecutionContext
 
-
 case class UserId(value: Long) extends MappedTo[Long]
-
+/*
 case class User(
     id: Option[UserId] = None,
     email: String, 
     password: String)
+*/
 
-case class NewUser(email: String, password: String)
+abstract class User(email: String, password: String)
+case class UserPrototype(email: String, password: String)                              extends User(email, password)
+case class UserValidated(email: String, password: String)                              extends User(email, password)
+case class UserMapping(id: Option[UserId] = None, email: String, passwordHash: String) extends User(email, passwordHash)
 
 object User {
 
@@ -31,14 +35,16 @@ object User {
 
   private val emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".r
 
-  def validateUser(email: String, password: String)(implicit ec: ExecutionContext): DBIO[Xor[NonEmptyList[ValidationError], User]] = {
+  def validateUser(userPrototype: UserPrototype)(implicit ec: ExecutionContext): DBIO[Xor[NonEmptyList[ValidationError], UserValidated]] = {
 
-    val validation = validateEmail(email).toValidated map { emailV =>
-      (emailV.toValidatedNel |@| validatePassword(password).toValidatedNel) map (User.apply(None, _, _))
+    val validation = validateEmail(userPrototype.email).toValidated map { emailV =>
+      (emailV.toValidatedNel |@| validatePassword(userPrototype.password).toValidatedNel) map (UserValidated.apply(_, _))
     }
 
     validation.map(_.toXor)
   }
+
+  def mapUser(userValidated: UserValidated): UserMapping = UserMapping(email = userValidated.email, passwordHash = userValidated.password.bcrypt)
 
   private def validateEmail(email: String)(implicit ec: ExecutionContext): XorT[DBIO, ValidationError, String] = {
 
