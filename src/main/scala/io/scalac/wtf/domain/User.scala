@@ -2,7 +2,8 @@ package io.scalac.wtf.domain
 
 import io.scalac.wtf.domain.Implicits._
 import cats._
-import cats.data.{Validated, Xor, XorT}
+import cats.data.{Xor, XorT}
+import cats.data.Xor._
 import cats.data.Validated._
 import cats.data.{NonEmptyList}
 import cats.implicits._
@@ -24,45 +25,40 @@ case class NewUser(email: String, password: String)
 object User {
 
   sealed trait ValidationError
-  final case object WrongEmailPattern extends ValidationError
-  final case object PasswordTooShort  extends ValidationError
-  final case object UserAlreadyExists extends ValidationError
+  case object WrongEmailPattern extends ValidationError
+  case object PasswordTooShort  extends ValidationError
+  case object UserAlreadyExists extends ValidationError
 
   private val emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".r
 
   def validateUser(email: String, password: String)(implicit ec: ExecutionContext): DBIO[Xor[NonEmptyList[ValidationError], User]] = {
-    val validatedUser = for {
-      emailV <- validateEmail(email).toValidated
-      emailNel = emailV.toValidatedNel
-      passwordNel = validatePassword(password).toValidatedNel
-    } yield (emailNel |@| passwordNel) map { 
-      case (email, password) => User(email = email, password = password)
+
+    val validation = validateEmail(email).toValidated map { emailV =>
+      (emailV.toValidatedNel |@| validatePassword(password).toValidatedNel) map (User.apply(None, _, _))
     }
 
-    validatedUser.map(_.toXor)
+    validation.map(_.toXor)
   }
 
   private def validateEmail(email: String)(implicit ec: ExecutionContext): XorT[DBIO, ValidationError, String] = {
-    val emailPatternValidation = (emailPattern findFirstIn email) match {
-      case Some(_) => Xor.right(email)
-      case None => Xor.left(WrongEmailPattern)
-    }
+
+    val emailPatternValidation = Xor.fromOption(emailPattern findFirstIn email, WrongEmailPattern)
 
     val emailUniqueValidation = UserRepository.findByEmail(email) map {
-        case Some(_) => Xor.left(UserAlreadyExists)
-        case None => Xor.right(email)
+        case Some(_) => left(UserAlreadyExists)
+        case None    => right(email)
     }
 
     for {
       e1 <- XorT[DBIO, ValidationError, String](DBIO.successful(emailPatternValidation))
       e2 <- XorT[DBIO, ValidationError, String](emailUniqueValidation)
-    } yield (e1 |+| e2)
+    } yield e1 |+| e2
   }
 
-  private def validatePassword(password: String): Validated[ValidationError, String] =
+  private def validatePassword(password: String): Xor[ValidationError, String] =
     if(password.length >= 6)
-      valid(password)
+      right(password)
     else
-      invalid(PasswordTooShort)
+      left(PasswordTooShort)
       
 }
