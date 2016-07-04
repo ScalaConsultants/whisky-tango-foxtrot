@@ -4,5 +4,5 @@ import slick.jdbc.JdbcBackend.Database
 
 import scala.concurrent.ExecutionContext
 
-case class Config(ec: ExecutionContext,
-                  db: Database)
+case class DatabaseConfig(ec: ExecutionContext,
+                          db: Database)
